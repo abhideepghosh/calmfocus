@@ -9,9 +9,11 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.calmfocus.app"
     },
     "android": {
+      "package": "com.calmfocus.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -38,11 +40,20 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "expo-build-properties",
+      "./plugins/withAndroidPermissions",
+      "./plugins/withFocusModule"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "98c02295-9551-4167-8a61-b12b8e9be743"
+      }
     }
   }
 }
