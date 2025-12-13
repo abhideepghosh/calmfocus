@@ -100,7 +100,7 @@ export default function Home() {
                 </View>
                 <View style={styles.headerActions}>
                     <TouchableOpacity
-                        style={styles.iconButton}
+                        style={[styles.iconButton, { backgroundColor: themeColors.card }]} // Dynamic bg
                         onPress={toggleTheme}
                         activeOpacity={0.7}
                     >
@@ -112,7 +112,7 @@ export default function Home() {
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        style={styles.iconButton}
+                        style={[styles.iconButton, { backgroundColor: themeColors.card }]} // Dynamic bg
                         onPress={showInfo}
                         activeOpacity={0.7}
                     >
@@ -132,9 +132,9 @@ export default function Home() {
                 </View>
 
                 {isFocusModeActive && (
-                    <View style={styles.statusBadge}>
-                        <MaterialCommunityIcons name="shield-check" size={16} color={Colors.light.success} />
-                        <Text style={styles.statusText}>
+                    <View style={[styles.statusBadge, { backgroundColor: themeColors.success + '20' }]}>
+                        <MaterialCommunityIcons name="shield-check" size={16} color={themeColors.success} />
+                        <Text style={[styles.statusText, { color: themeColors.success }]}>
                             {blockedApps.length} Apps Blocked
                         </Text>
                     </View>
@@ -153,34 +153,41 @@ export default function Home() {
 
             <View style={styles.grid}>
                 <TouchableOpacity
-                    style={[styles.card, isFocusModeActive && styles.cardDisabled]}
+                    style={[
+                        styles.card,
+                        isFocusModeActive && styles.cardDisabled,
+                        { backgroundColor: themeColors.card, borderColor: themeColors.border }
+                    ]}
                     onPress={() => router.push('/locker')}
                     disabled={isFocusModeActive}
                     activeOpacity={0.7}
                 >
-                    <View style={[styles.cardIcon, { backgroundColor: Colors.light.destructive + '15' }]}>
-                        <MaterialCommunityIcons name="lock-outline" size={28} color={Colors.light.destructive} />
+                    <View style={[styles.cardIcon, { backgroundColor: themeColors.destructive + '15' }]}>
+                        <MaterialCommunityIcons name="lock-outline" size={28} color={themeColors.destructive} />
                     </View>
                     <View style={styles.cardContent}>
-                        <Text style={styles.cardTitle}>App Locker</Text>
-                        <Text style={styles.cardSub}>{blockedApps.length} Selected</Text>
+                        <Text style={[styles.cardTitle, { color: themeColors.text }]}>App Locker</Text>
+                        <Text style={[styles.cardSub, { color: themeColors.textSecondary }]}>{blockedApps.length} Selected</Text>
                     </View>
-                    <MaterialCommunityIcons name="chevron-right" size={20} color={Colors.light.textTertiary} />
+                    <MaterialCommunityIcons name="chevron-right" size={20} color={themeColors.textTertiary} />
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                    style={styles.card}
+                    style={[
+                        styles.card,
+                        { backgroundColor: themeColors.card, borderColor: themeColors.border }
+                    ]}
                     onPress={() => router.push('/browser')}
                     activeOpacity={0.7}
                 >
-                    <View style={[styles.cardIcon, { backgroundColor: Colors.light.success + '15' }]}>
-                        <MaterialCommunityIcons name="web" size={28} color={Colors.light.success} />
+                    <View style={[styles.cardIcon, { backgroundColor: themeColors.success + '15' }]}>
+                        <MaterialCommunityIcons name="web" size={28} color={themeColors.success} />
                     </View>
                     <View style={styles.cardContent}>
-                        <Text style={styles.cardTitle}>Safe Browser</Text>
-                        <Text style={styles.cardSub}>Search & Surf</Text>
+                        <Text style={[styles.cardTitle, { color: themeColors.text }]}>Safe Browser</Text>
+                        <Text style={[styles.cardSub, { color: themeColors.textSecondary }]}>Search & Surf</Text>
                     </View>
-                    <MaterialCommunityIcons name="chevron-right" size={20} color={Colors.light.textTertiary} />
+                    <MaterialCommunityIcons name="chevron-right" size={20} color={themeColors.textTertiary} />
                 </TouchableOpacity>
             </View>
         </SafeAreaView>
@@ -266,7 +273,7 @@ const styles = StyleSheet.create({
     },
     cardDisabled: {
         opacity: 0.6,
-        backgroundColor: Colors.light.background,
+        // backgroundColor handled dynamically
     },
     cardIcon: {
         width: 56,

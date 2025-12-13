@@ -1,24 +1,23 @@
 package com.calmfocus.app;
 
-import com.facebook.react.bridge.NativeModule;
+import java.util.HashSet;
+import java.util.List;
+
+import javax.naming.Context;
+
+import com.facebook.react.bridge.Arguments;
+import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
-import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
-import android.content.Context;
-import android.content.Intent;
-import android.provider.Settings;
-import android.app.AppOpsManager;
-import android.os.Process;
-import android.net.Uri;
-import com.facebook.react.bridge.Promise;
-import android.content.pm.PackageManager;
-import android.content.pm.ApplicationInfo;
-import java.util.List;
-import java.util.ArrayList;
 import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.WritableMap;
-import com.facebook.react.bridge.Arguments;
+
+import android.app.AppOpsManager;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.net.Uri;
+import android.provider.Settings;
 
 public class FocusModule extends ReactContextBaseJavaModule {
     private static ReactApplicationContext reactContext;
@@ -37,11 +36,12 @@ public class FocusModule extends ReactContextBaseJavaModule {
     public void checkUsagePermission(Promise promise) {
         boolean granted = false;
         AppOpsManager appOps = (AppOpsManager) reactContext.getSystemService(Context.APP_OPS_SERVICE);
-        int mode = appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, 
+        int mode = appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS,
                 android.os.Process.myUid(), reactContext.getPackageName());
 
         if (mode == AppOpsManager.MODE_DEFAULT) {
-            granted = (reactContext.checkCallingOrSelfPermission(android.Manifest.permission.PACKAGE_USAGE_STATS) == PackageManager.PERMISSION_GRANTED);
+            granted = (reactContext.checkCallingOrSelfPermission(
+                    android.Manifest.permission.PACKAGE_USAGE_STATS) == PackageManager.PERMISSION_GRANTED);
         } else {
             granted = (mode == AppOpsManager.MODE_ALLOWED);
         }
@@ -88,21 +88,30 @@ public class FocusModule extends ReactContextBaseJavaModule {
     @ReactMethod
     public void getInstalledApps(Promise promise) {
         PackageManager pm = reactContext.getPackageManager();
-        List<ApplicationInfo> packages = pm.getInstalledApplications(PackageManager.GET_META_DATA);
+        Intent intent = new Intent(Intent.ACTION_MAIN, null);
+        intent.addCategory(Intent.CATEGORY_LAUNCHER);
+
+        // This returns a list of ResolveInfo objects
+        List<android.content.pm.ResolveInfo> apps = pm.queryIntentActivities(intent, 0);
+
         WritableArray appList = Arguments.createArray();
 
-        for (ApplicationInfo appInfo : packages) {
-            // Filter out system apps if desired, or keep all. 
-            // For now, let's keep non-system apps or apps that have a launch intent.
-            if (pm.getLaunchIntentForPackage(appInfo.packageName) != null) {
+        // Use a set to avoid duplicates if multiple activities point to same package
+        HashSet<String> addedPackages = new HashSet<>();
+
+        for (android.content.pm.ResolveInfo resolveInfo : apps) {
+            String packageName = resolveInfo.activityInfo.packageName;
+
+            if (!addedPackages.contains(packageName)) {
+                // Determine label: loadLabel returns CharSequence
+                String label = resolveInfo.loadLabel(pm).toString();
+
                 WritableMap app = Arguments.createMap();
-                app.putString("packageName", appInfo.packageName);
-                app.putString("name", pm.getApplicationLabel(appInfo).toString());
-                // Icon handling is complex to send over bridge, usually we send a URI or handle it differently.
-                // For simplicity, we just send existence. The JS side can use package name to fetch icon if using a library,
-                // or we can implement a custom content provider. 
-                // Let's stick to basics.
+                app.putString("packageName", packageName);
+                app.putString("name", label);
+
                 appList.pushMap(app);
+                addedPackages.add(packageName);
             }
         }
         promise.resolve(appList);
