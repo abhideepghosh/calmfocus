@@ -5,10 +5,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.logging.Handler;
+import android.os.Handler;
 
-import javax.management.Notification;
-import javax.naming.Context;
+import android.app.Notification;
+import android.content.Context;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -39,6 +39,10 @@ public class FocusService extends android.app.Service {
         }
     };
 
+    /**
+     * Called when the service is started.
+     * Parses the list of blocked apps and starts the foreground notification.
+     */
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         String blockedJson = intent.getStringExtra("BLOCKED_APPS");
@@ -74,6 +78,9 @@ public class FocusService extends android.app.Service {
         return null; // We don't bind
     }
 
+    /**
+     * Parses the JSON string of blocked package names.
+     */
     private void parseBlockedApps(String json) {
         blockedPackages.clear();
         try {
@@ -86,6 +93,12 @@ public class FocusService extends android.app.Service {
         }
     }
 
+    /**
+     * Checks the currently active application.
+     * Uses UsageEvents for high precision (immediate changes) and falls back to
+     * UsageStats.
+     * If a blocked app is detected, it launches the BlockOverlayActivity.
+     */
     private void checkCurrentApp() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             UsageStatsManager mUsageStatsManager = (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);
@@ -129,6 +142,9 @@ public class FocusService extends android.app.Service {
         }
     }
 
+    /**
+     * Creates the notification channel required for Android Oreo and above.
+     */
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel serviceChannel = new NotificationChannel(

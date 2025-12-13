@@ -3,8 +3,9 @@ package com.calmfocus.app;
 import java.util.HashSet;
 import java.util.List;
 
-import javax.naming.Context;
+import android.content.Context;
 
+import com.calmfocus.app.FocusService;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
@@ -32,6 +33,9 @@ public class FocusModule extends ReactContextBaseJavaModule {
         return "FocusModule";
     }
 
+    /**
+     * Checks if the user has granted Usage Access permission.
+     */
     @ReactMethod
     public void checkUsagePermission(Promise promise) {
         boolean granted = false;
@@ -48,11 +52,17 @@ public class FocusModule extends ReactContextBaseJavaModule {
         promise.resolve(granted);
     }
 
+    /**
+     * Checks if the user has granted the "Display over other apps" permission.
+     */
     @ReactMethod
     public void checkOverlayPermission(Promise promise) {
         promise.resolve(Settings.canDrawOverlays(reactContext));
     }
 
+    /**
+     * Opens the system settings screen for Usage Access.
+     */
     @ReactMethod
     public void openUsageSettings() {
         Intent intent = new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS);
@@ -60,6 +70,9 @@ public class FocusModule extends ReactContextBaseJavaModule {
         reactContext.startActivity(intent);
     }
 
+    /**
+     * Opens the system settings screen for Overlay permissions for this app.
+     */
     @ReactMethod
     public void openOverlaySettings() {
         Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
@@ -68,6 +81,11 @@ public class FocusModule extends ReactContextBaseJavaModule {
         reactContext.startActivity(intent);
     }
 
+    /**
+     * Starts the FocusService to monitor app usage.
+     * 
+     * @param blockedAppsJson JSON string of package names to block.
+     */
     @ReactMethod
     public void startMonitoring(String blockedAppsJson) {
         Intent serviceIntent = new Intent(reactContext, FocusService.class);
@@ -79,12 +97,18 @@ public class FocusModule extends ReactContextBaseJavaModule {
         }
     }
 
+    /**
+     * Stops the FocusService.
+     */
     @ReactMethod
     public void stopMonitoring() {
         Intent serviceIntent = new Intent(reactContext, FocusService.class);
         reactContext.stopService(serviceIntent);
     }
 
+    /**
+     * Returns a list of installed applications that have a launchable activity.
+     */
     @ReactMethod
     public void getInstalledApps(Promise promise) {
         PackageManager pm = reactContext.getPackageManager();
