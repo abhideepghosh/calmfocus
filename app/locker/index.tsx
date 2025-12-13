@@ -12,9 +12,11 @@ interface AppItem {
 }
 
 export default function Locker() {
-    const { blockedApps, toggleBlockedApp } = useStore();
+    const { blockedApps, toggleBlockedApp, theme } = useStore();
     const [installedApps, setInstalledApps] = useState<AppItem[]>([]);
     const [loading, setLoading] = useState(true);
+
+    const themeColors = Colors[theme] || Colors.light;
 
     useEffect(() => {
         loadApps();
@@ -45,18 +47,18 @@ export default function Locker() {
     const renderItem = ({ item }: { item: AppItem }) => {
         const isBlocked = blockedApps.includes(item.packageName);
         return (
-            <View style={styles.item}>
-                <View style={styles.iconPlaceholder}>
-                    <Text style={styles.iconText}>{item.name.charAt(0)}</Text>
+            <View style={[styles.item, { backgroundColor: themeColors.card, borderColor: themeColors.border }]}>
+                <View style={[styles.iconPlaceholder, { backgroundColor: themeColors.secondary }]}>
+                    <Text style={[styles.iconText, { color: themeColors.secondaryForeground }]}>{item.name.charAt(0)}</Text>
                 </View>
                 <View style={styles.info}>
-                    <Text style={styles.appName} numberOfLines={1}>{item.name}</Text>
-                    <Text style={styles.pkgNameDisplay} numberOfLines={1}>{item.packageName}</Text>
+                    <Text style={[styles.appName, { color: themeColors.text }]} numberOfLines={1}>{item.name}</Text>
+                    <Text style={[styles.pkgNameDisplay, { color: themeColors.textTertiary }]} numberOfLines={1}>{item.packageName}</Text>
                 </View>
                 <Switch
                     value={isBlocked}
                     onValueChange={() => toggleBlockedApp(item.packageName)}
-                    trackColor={{ false: Colors.light.input, true: Colors.light.destructive }}
+                    trackColor={{ false: themeColors.input, true: themeColors.destructive }}
                     thumbColor="#FFF"
                 />
             </View>
@@ -64,10 +66,10 @@ export default function Locker() {
     };
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: themeColors.background }]}>
             {loading ? (
                 <View style={styles.center}>
-                    <ActivityIndicator size="large" color={Colors.light.primary} />
+                    <ActivityIndicator size="large" color={themeColors.primary} />
                 </View>
             ) : (
                 <FlatList
@@ -77,7 +79,7 @@ export default function Locker() {
                     contentContainerStyle={styles.list}
                     ListHeaderComponent={
                         <View style={styles.listHeader}>
-                            <Text style={styles.headerText}>
+                            <Text style={[styles.headerText, { color: themeColors.textSecondary }]}>
                                 Select apps to lock completely during Focus Mode.
                             </Text>
                         </View>
@@ -91,7 +93,7 @@ export default function Locker() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: Colors.light.background,
+        // backgroundColor set dynamically
     },
     center: {
         flex: 1,
@@ -107,25 +109,25 @@ const styles = StyleSheet.create({
     },
     headerText: {
         ...Typography.body.md,
-        color: Colors.light.textSecondary,
+        // color set dynamically
     },
     item: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: Spacing.md,
         paddingHorizontal: Spacing.md,
-        backgroundColor: Colors.light.card,
+        // backgroundColor set dynamically
         marginBottom: Spacing.sm,
         borderRadius: BorderRadius.lg,
         ...Shadows.sm,
         borderWidth: 1,
-        borderColor: Colors.light.border,
+        // borderColor set dynamically
     },
     iconPlaceholder: {
         width: 48,
         height: 48,
         borderRadius: 10,
-        backgroundColor: Colors.light.secondary,
+        // backgroundColor set dynamically
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: Spacing.md,
@@ -133,7 +135,7 @@ const styles = StyleSheet.create({
     iconText: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: Colors.light.secondaryForeground,
+        // color set dynamically
     },
     info: {
         flex: 1,
@@ -142,11 +144,11 @@ const styles = StyleSheet.create({
     appName: {
         ...Typography.body.lg,
         fontWeight: '600',
-        color: Colors.light.text,
+        // color set dynamically
     },
     pkgNameDisplay: {
         ...Typography.body.xs,
-        color: Colors.light.textTertiary,
+        // color set dynamically
         marginTop: 2,
     },
 });

@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
-import { NativeModules, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, NativeModules, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../components/ui/Button';
 import { Timer } from '../../components/ui/Timer';
@@ -12,12 +12,20 @@ export default function Home() {
     const router = useRouter();
     const {
         isFocusModeActive, setFocusModeActive,
-        timerDuration,
+        timerDuration, setTimerDuration,
         blockedApps,
-        timerEndTime, setTimerEndTime
+        timerEndTime, setTimerEndTime,
+        theme, toggleTheme
     } = useStore();
 
     const [remaining, setRemaining] = React.useState(timerDuration);
+
+    // Sync remaining with duration when not running logic
+    useEffect(() => {
+        if (!isFocusModeActive) {
+            setRemaining(timerDuration);
+        }
+    }, [timerDuration, isFocusModeActive]);
 
     // Timer Logic
     useEffect(() => {
@@ -34,11 +42,9 @@ export default function Home() {
             };
             tick();
             interval = setInterval(tick, 1000);
-        } else {
-            setRemaining(timerDuration);
         }
         return () => clearInterval(interval);
-    }, [isFocusModeActive, timerEndTime, timerDuration, setFocusModeActive, setTimerEndTime]);
+    }, [isFocusModeActive, timerEndTime, setFocusModeActive, setTimerEndTime]);
 
     const toggleFocus = () => {
         if (isFocusModeActive) {
@@ -48,7 +54,7 @@ export default function Home() {
                 NativeModules.FocusModule.stopMonitoring();
             }
         } else {
-            const endTime = Date.now() + timerDuration * 1000;
+            const endTime = Date.now() + remaining * 1000;
             setTimerEndTime(endTime);
             setFocusModeActive(true);
 
@@ -59,21 +65,70 @@ export default function Home() {
         }
     };
 
+    const handleDurationChange = (newDuration: number) => {
+        if (!isFocusModeActive) {
+            setTimerDuration(newDuration);
+            setRemaining(newDuration);
+        }
+    };
+
+    const showInfo = () => {
+        Alert.alert(
+            "Privacy First",
+            "This app is completely offline and stores no data. Your privacy is paramount."
+        );
+    };
+
+    // Ensure we use the correct colors based on theme if we implemented full theming
+    // For now, assuming Colors[theme] pattern or just keeping existing Colors.light references 
+    // but toggling logic exists. 
+    // Since Colors.light is hardcoded in styles, real dark mode requires dynamic styles.
+    // For this task, I will stick to adding the BUTTON for dark mode as requested, 
+    // and basic connection, assuming global styles update or context. 
+    // With `useStore` I can conditionally pick colors.
+
+    // Quick Fix: Dynamic Styles
+    const themeColors = Colors[theme] || Colors.light;
+    const isDark = theme === 'dark';
+
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
             <View style={styles.header}>
                 <View>
-                    <Text style={styles.greeting}>Welcome back,</Text>
-                    <Text style={styles.headerTitle}>Calm Focus</Text>
+                    {/* Updated Header: "Calm Focus" bold, removed greeting */}
+                    <Text style={[styles.headerTitle, { color: themeColors.text }]}>Calm Focus</Text>
                 </View>
-                <TouchableOpacity style={styles.settingsButton} activeOpacity={0.7}>
-                    <MaterialCommunityIcons name="cog-outline" size={24} color={Colors.light.text} />
-                </TouchableOpacity>
+                <View style={styles.headerActions}>
+                    <TouchableOpacity
+                        style={styles.iconButton}
+                        onPress={toggleTheme}
+                        activeOpacity={0.7}
+                    >
+                        <MaterialCommunityIcons
+                            name={isDark ? "weather-sunny" : "weather-night"}
+                            size={24}
+                            color={themeColors.text}
+                        />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.iconButton}
+                        onPress={showInfo}
+                        activeOpacity={0.7}
+                    >
+                        <MaterialCommunityIcons name="information-variant" size={24} color={themeColors.text} />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <View style={styles.main}>
                 <View style={styles.timerContainer}>
-                    <Timer duration={timerDuration} remaining={remaining} />
+                    <Timer
+                        duration={timerDuration}
+                        remaining={remaining}
+                        onChange={isFocusModeActive ? undefined : handleDurationChange}
+                        colors={themeColors}
+                    />
                 </View>
 
                 {isFocusModeActive && (
@@ -91,6 +146,7 @@ export default function Home() {
                         onPress={toggleFocus}
                         variant={isFocusModeActive ? "outline" : "primary"}
                         style={styles.mainButton}
+                        colors={themeColors}
                     />
                 </View>
             </View>
@@ -152,9 +208,13 @@ const styles = StyleSheet.create({
         ...Typography.heading.h2,
         color: Colors.light.text,
     },
-    settingsButton: {
+    headerActions: {
+        flexDirection: 'row',
+        gap: Spacing.sm,
+    },
+    iconButton: {
         padding: Spacing.sm,
-        backgroundColor: Colors.light.card,
+        backgroundColor: Colors.light.card, // Static for now or dynamic if inline
         borderRadius: BorderRadius.full,
         ...Shadows.sm,
     },

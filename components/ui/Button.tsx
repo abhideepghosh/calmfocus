@@ -1,5 +1,6 @@
 import React from 'react';
 import { ActivityIndicator, StyleSheet, Text, TextStyle, TouchableOpacity, ViewStyle } from 'react-native';
+import { Colors } from '../../constants/theme';
 
 interface ButtonProps {
     title: string;
@@ -11,22 +12,31 @@ interface ButtonProps {
     loading?: boolean;
 }
 
-export const Button = ({ title, onPress, variant = 'primary', style, textStyle, disabled, loading }: ButtonProps) => {
+export const Button = ({
+    title,
+    onPress,
+    variant = 'primary',
+    style,
+    textStyle,
+    disabled,
+    loading,
+    colors = Colors.light // Default fallback
+}: ButtonProps & { colors?: typeof Colors.light }) => {
     const getBackgroundColor = () => {
-        if (disabled) return '#E0E0E0';
+        if (disabled) return colors.input; // Disabled color from theme? Or hardcoded gray.
         switch (variant) {
-            case 'primary': return '#4A90E2';
-            case 'secondary': return '#88B04B';
-            case 'alert': return '#FF6B6B';
+            case 'primary': return colors.primary;
+            case 'secondary': return colors.secondary;
+            case 'alert': return colors.destructive;
             case 'outline': return 'transparent';
-            default: return '#4A90E2';
+            default: return colors.primary;
         }
     };
 
     const getTextColor = () => {
-        if (disabled) return '#A0A0A0';
-        if (variant === 'outline') return '#4A90E2';
-        return '#FFFFFF';
+        if (disabled) return colors.textTertiary;
+        if (variant === 'outline') return colors.primary;
+        return '#FFFFFF'; // Front color usually white for filled buttons
     };
 
     return (
@@ -37,7 +47,7 @@ export const Button = ({ title, onPress, variant = 'primary', style, textStyle, 
             style={[
                 styles.button,
                 { backgroundColor: getBackgroundColor() },
-                variant === 'outline' && styles.outline,
+                variant === 'outline' && { borderWidth: 2, borderColor: colors.primary, elevation: 0 },
                 style
             ]}
         >
@@ -59,16 +69,14 @@ const styles = StyleSheet.create({
         borderRadius: 30,
         alignItems: 'center',
         justifyContent: 'center',
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
+        // elevation: 2, // Removing potential artifact cause
+        // shadowColor: '#000',
+        // shadowOffset: { width: 0, height: 2 },
+        // shadowOpacity: 0.1,
+        // shadowRadius: 4,
     },
     outline: {
-        borderWidth: 2,
-        borderColor: '#4A90E2',
-        elevation: 0,
+        // letterSpacing: 0.5, // Moving to text style
     },
     text: {
         fontSize: 16,

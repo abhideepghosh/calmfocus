@@ -73,30 +73,33 @@ public class FocusService extends Service {
     }
 
     private void checkCurrentApp() {
-        String topPackageName = "";
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             UsageStatsManager mUsageStatsManager = (UsageStatsManager) getSystemService(Context.USAGE_STATS_SERVICE);
             long time = System.currentTimeMillis();
-            // Look back 2 seconds
-            List<UsageStats> stats = mUsageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, time - 1000 * 2, time);
             
-            if (stats != null) {
-                SortedMap<Long, UsageStats> mySortedMap = new TreeMap<Long, UsageStats>();
-                for (UsageStats usageStats : stats) {
-                    mySortedMap.put(usageStats.getLastTimeUsed(), usageStats);
-                }
-                if (!mySortedMap.isEmpty()) {
-                    topPackageName = mySortedMap.get(mySortedMap.lastKey()).getPackageName();
+            // queryEvents is more accurate for real-time foreground detection than queryUsageStats
+            android.app.usage.UsageEvents events = mUsageStatsManager.queryEvents(time - 1000 * 5, time); // Look back 5 seconds
+            android.app.usage.UsageEvents.Event currentEvent = new android.app.usage.UsageEvents.Event();
+            String topPackageName = null;
+
+            // Iterate to find the latest MOVE_TO_FOREGROUND event
+            while (events.hasNextEvent()) {
+                events.getNextEvent(currentEvent);
+                if (currentEvent.getEventType() == android.app.usage.UsageEvents.Event.MOVE_TO_FOREGROUND) {
+                    topPackageName = currentEvent.getPackageName();
                 }
             }
-        }
 
-        if (blockedPackages.contains(topPackageName)) {
-            // Block it!
-            Intent intent = new Intent(this, BlockOverlayActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            intent.putExtra("BLOCKED_PACKAGE", topPackageName);
-            startActivity(intent);
+            if (topPackageName != null && blockedPackages.contains(topPackageName)) {
+                // Double check if we are already overlaying to avoid spamming activities
+                // In a real scenario, we might want to check if the top app is NOT our overlay
+                // For now, simpler is better: if blocked app is top, show overlay.
+                
+                Intent intent = new Intent(this, BlockOverlayActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                intent.putExtra("BLOCKED_PACKAGE", topPackageName);
+                startActivity(intent);
+            }
         }
     }
 
