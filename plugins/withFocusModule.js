@@ -14,7 +14,7 @@ const withFocusModule = (config) => {
 
             // Source files
             const sourceDir = path.join(projectRoot, 'native-code/android');
-            const files = ['FocusModule.java', 'FocusPackage.java', 'FocusService.java', 'BlockOverlayActivity.java'];
+            const files = ['FocusModule.java', 'FocusPackage.java', 'FocusService.java', 'BlockOverlayActivity.java', 'AppBlockingAccessibilityService.java'];
 
             files.forEach(file => {
                 const src = path.join(sourceDir, file);
@@ -40,20 +40,7 @@ const withFocusModule = (config) => {
         }
 
         // Add Package to getPackages()
-        // Pattern: PackageList(this).packages
-        // Replacement: PackageList(this).packages.toMutableList().apply { add(FocusPackage()) }
-        // Or simpler if it's just a return: return PackageList(this).packages
-
-        // Check if we already added it
         if (!src.includes('FocusPackage()')) {
-            // This regex looks for the standard getPackages implementation in Expo's template
-            // Note: The template might vary, so we try to be robust.
-            // Usually: override fun getPackages(): List<ReactPackage> = PackageList(this).packages
-            // OR:
-            // override fun getPackages(): List<ReactPackage> {
-            //   return PackageList(this).packages
-            // }
-
             if (src.includes('PackageList(this).packages')) {
                 src = src.replace(
                     /PackageList\(this\).packages/g,
@@ -72,16 +59,34 @@ const withFocusModule = (config) => {
     config = withAndroidManifest(config, (config) => {
         const mainApplication = AndroidConfig.Manifest.getMainApplicationOrThrow(config.modResults);
 
-        // Add Service
-        AndroidConfig.Manifest.addMetaDataItemToMainApplication(
-            mainApplication,
-            'service', // This helper is typically for metadata, but we can manually add children
-            'FocusService' // Value - irrelevant here as we do manual push below
-        );
-
-        // Helper doesn't exist for adding Services/Activities directly easily, so we access the raw array
+        // AppBlockingAccessibilityService
         if (!mainApplication.service) {
             mainApplication.service = [];
+        }
+
+        if (!mainApplication.service.some(s => s.$['android:name'] === '.AppBlockingAccessibilityService')) {
+            mainApplication.service.push({
+                $: {
+                    'android:name': '.AppBlockingAccessibilityService',
+                    'android:permission': 'android.permission.BIND_ACCESSIBILITY_SERVICE',
+                    'android:exported': 'true'
+                },
+                'intent-filter': [
+                    {
+                        action: [
+                            { $: { 'android:name': 'android.accessibilityservice.AccessibilityService' } }
+                        ]
+                    }
+                ],
+                'meta-data': [
+                    {
+                        $: {
+                            'android:name': 'android.accessibilityservice',
+                            'android:resource': '@xml/accessibility_service_config'
+                        }
+                    }
+                ]
+            });
         }
 
         // FocusService
@@ -90,8 +95,8 @@ const withFocusModule = (config) => {
                 $: {
                     'android:name': '.FocusService',
                     'android:enabled': 'true',
-                    'android:exported': 'false', // Internal use
-                    'android:foregroundServiceType': 'dataSync' // Optional, but good for O+
+                    'android:exported': 'false',
+                    'android:foregroundServiceType': 'dataSync'
                 }
             });
         }
