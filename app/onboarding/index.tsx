@@ -18,15 +18,18 @@ export default function Onboarding() {
     const handlePermissions = async () => {
         Alert.alert(
             "Permission Required",
-            "We are about to open your settings. Please find 'Calm Focus' and grant 'Usage Access' and 'Display Over Other Apps' permissions.",
+            "To block apps effectively, we need 'Accessibility Service' permission. Please find 'Calm Focus' in the list and enable it.",
             [
                 {
                     text: "OK",
                     onPress: async () => {
                         await PermissionService.requestUsageStatsPermission();
                         if (Platform.OS === 'android') {
-                            setTimeout(() => {
-                                PermissionService.requestOverlayPermission();
+                            setTimeout(async () => {
+                                await PermissionService.requestOverlayPermission();
+                                setTimeout(() => {
+                                    PermissionService.requestAccessibilityPermission();
+                                }, 1000);
                             }, 1000);
                         }
                         setStep(1);

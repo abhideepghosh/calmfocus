@@ -28,28 +28,53 @@ public class FocusModule extends ReactContextBaseJavaModule {
         reactContext = context;
     }
 
+    private static final String PREFS_NAME = "FocusPrefs";
+    private static final String BLOCKED_APPS_KEY = "blocked_apps";
+
     @Override
     public String getName() {
         return "FocusModule";
     }
 
-    /**
-     * Checks if the user has granted Usage Access permission.
-     */
     @ReactMethod
-    public void checkUsagePermission(Promise promise) {
-        boolean granted = false;
-        AppOpsManager appOps = (AppOpsManager) reactContext.getSystemService(Context.APP_OPS_SERVICE);
-        int mode = appOps.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS,
-                android.os.Process.myUid(), reactContext.getPackageName());
-
-        if (mode == AppOpsManager.MODE_DEFAULT) {
-            granted = (reactContext.checkCallingOrSelfPermission(
-                    android.Manifest.permission.PACKAGE_USAGE_STATS) == PackageManager.PERMISSION_GRANTED);
-        } else {
-            granted = (mode == AppOpsManager.MODE_ALLOWED);
+    public void isAccessibilityEnabled(Promise promise) {
+        int accessibilityEnabled = 0;
+        final String service = reactContext.getPackageName() + "/"
+                + AppBlockingAccessibilityService.class.getCanonicalName();
+        try {
+            accessibilityEnabled = Settings.Secure.getInt(
+                    reactContext.getApplicationContext().getContentResolver(),
+                    android.provider.Settings.Secure.ACCESSIBILITY_ENABLED);
+        } catch (Settings.SettingNotFoundException e) {
+            e.printStackTrace();
         }
-        promise.resolve(granted);
+
+        android.text.TextUtils.SimpleStringSplitter mStringColonSplitter = new android.text.TextUtils.SimpleStringSplitter(
+                ':');
+
+        if (accessibilityEnabled == 1) {
+            String settingValue = Settings.Secure.getString(
+                    reactContext.getApplicationContext().getContentResolver(),
+                    Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+            if (settingValue != null) {
+                mStringColonSplitter.setString(settingValue);
+                while (mStringColonSplitter.hasNext()) {
+                    String accessibilityService = mStringColonSplitter.next();
+                    if (accessibilityService.equalsIgnoreCase(service)) {
+                        promise.resolve(true);
+                        return;
+                    }
+                }
+            }
+        }
+        promise.resolve(false);
+    }
+
+    @ReactMethod
+    public void openAccessibilitySettings() {
+        Intent intent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        reactContext.startActivity(intent);
     }
 
     /**
@@ -58,16 +83,6 @@ public class FocusModule extends ReactContextBaseJavaModule {
     @ReactMethod
     public void checkOverlayPermission(Promise promise) {
         promise.resolve(Settings.canDrawOverlays(reactContext));
-    }
-
-    /**
-     * Opens the system settings screen for Usage Access.
-     */
-    @ReactMethod
-    public void openUsageSettings() {
-        Intent intent = new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        reactContext.startActivity(intent);
     }
 
     /**
@@ -88,6 +103,13 @@ public class FocusModule extends ReactContextBaseJavaModule {
      */
     @ReactMethod
     public void startMonitoring(String blockedAppsJson) {
+        // Save to SharedPrefs for AccessibilityService to pick up
+        reactContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .edit()
+                .putString(BLOCKED_APPS_KEY, blockedAppsJson)
+                .apply();
+
+        // also start the foreground service for notification persistence
         Intent serviceIntent = new Intent(reactContext, FocusService.class);
         serviceIntent.putExtra("BLOCKED_APPS", blockedAppsJson);
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
@@ -102,6 +124,12 @@ public class FocusModule extends ReactContextBaseJavaModule {
      */
     @ReactMethod
     public void stopMonitoring() {
+        // Clear blocked apps in SharedPrefs
+        reactContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .edit()
+                .remove(BLOCKED_APPS_KEY)
+                .apply();
+
         Intent serviceIntent = new Intent(reactContext, FocusService.class);
         reactContext.stopService(serviceIntent);
     }

@@ -39,5 +39,21 @@ export const PermissionService = {
             }
         }
         return true;
+    },
+
+    requestAccessibilityPermission: async (): Promise<boolean> => {
+        if (Platform.OS === 'android') {
+            try {
+                const enabled = await FocusModule.isAccessibilityEnabled();
+                if (enabled) return true;
+
+                FocusModule.openAccessibilitySettings();
+                return false;
+            } catch (e) {
+                console.warn('Failed to open accessibility settings', e);
+                return false;
+            }
+        }
+        return true;
     }
 };
