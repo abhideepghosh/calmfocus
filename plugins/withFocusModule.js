@@ -26,6 +26,19 @@ const withFocusModule = (config) => {
                 }
             });
 
+            // Copy Resources (XML)
+            const resXmlDir = path.join(config.modRequest.platformProjectRoot, 'app/src/main/res/xml');
+            if (!fs.existsSync(resXmlDir)) {
+                fs.mkdirSync(resXmlDir, { recursive: true });
+            }
+            const sourceXml = path.join(sourceDir, 'res/xml/accessibility_service_config.xml');
+            const destXml = path.join(resXmlDir, 'accessibility_service_config.xml');
+            if (fs.existsSync(sourceXml)) {
+                fs.copyFileSync(sourceXml, destXml);
+            } else {
+                console.warn(`Warning: Could not find resource file: ${sourceXml}`);
+            }
+
             return config;
         },
     ]);
